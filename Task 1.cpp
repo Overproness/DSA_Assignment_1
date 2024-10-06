@@ -1,7 +1,7 @@
 #include <iostream>
 using namespace std;
 
-// Process Node
+// Process Node unit for the Linked List
 struct Process
 {
     int process_id;
@@ -18,30 +18,30 @@ struct Process
     }
 };
 
-// Scheduler class for Round Robin scheduling
+// Scheduler class for scheduling. This is basically the Linked List for the Process Node units. It will contain the main logic of the program.
 class Scheduler
 {
 private:
     Process *head;
     Process *tail;
-    int time_slice;
+    int time_per_process_per_cycle;
 
 public:
-    Scheduler(int time_slice)
+    Scheduler(int time_per_process_per_cycle)
     {
         this->head = nullptr;
         this->tail = nullptr;
-        this->time_slice = time_slice;
+        this->time_per_process_per_cycle = time_per_process_per_cycle;
     }
 
-    // Add process to the circular linked list
+    // To Add process to the circular linked list
     void addProcess(int process_id, int execution_time)
     {
         Process *new_process = new Process(process_id, execution_time);
         if (!head)
         {
             head = tail = new_process;
-            tail->next = head; // Make it circular
+            tail->next = head; // Making it a circular linked list
         }
         else
         {
@@ -51,7 +51,7 @@ public:
         }
     }
 
-    // Remove a process from the circular linked list
+    // Remove a process from the circular linked list. We can just choose to ignore nodes but we will not be doing that.
     void removeProcess(Process *prev, Process *curr)
     {
         if (curr == head && curr == tail)
@@ -74,7 +74,7 @@ public:
         }
     }
 
-    // Display current status of processes in the list
+    // Display current status of processes in the list. Main ne sir ke output ka chappa nahi mara. I made some small changes
     void displayProcesses()
     {
         if (!head)
@@ -92,7 +92,7 @@ public:
         cout << endl;
     }
 
-    // Run the scheduler to assign CPU time to each process
+    // Run the scheduler to assign CPU time to each process. This is the main logic of the program.
     void run()
     {
         if (!head)
@@ -111,7 +111,7 @@ public:
             {
                 cout << "Running P" << curr->process_id << endl;
 
-                if (curr->remaining_time <= time_slice)
+                if (curr->remaining_time <= time_per_process_per_cycle)
                 {
                     // Process completes
                     cout << "P" << curr->process_id << " completes." << endl;
@@ -129,7 +129,7 @@ public:
                 else
                 {
                     // Process doesn't complete, reduce its remaining time
-                    curr->remaining_time -= time_slice;
+                    curr->remaining_time -= time_per_process_per_cycle;
                     prev = curr;
                     curr = curr->next;
                 }
