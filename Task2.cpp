@@ -1,181 +1,155 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include <vector>
 
-using namespace std;
-
-// Node class for linked list to store 64-bit chunks of the number
+// Node structure for linked list
 class Node
 {
 public:
-    uint64_t data; // 64-bit integer
+    unsigned int data; // 32-bit integer to store part of the 1024-bit number
     Node *next;
 
-    Node(uint64_t data) : data(data), next(nullptr) {}
+    Node(unsigned int data) : data(data), next(nullptr) {}
 };
 
-// LinkedList class to manage the linked list
+// Linked list to represent the large number
 class LinkedList
 {
-public:
+private:
     Node *head;
+    Node *tail;
 
-    LinkedList() : head(nullptr) {}
+public:
+    LinkedList() : head(nullptr), tail(nullptr) {}
 
-    // Append a 64-bit number to the linked list
-    void append(uint64_t data)
+    // Add a new node at the end
+    void append(unsigned int data)
     {
         Node *newNode = new Node(data);
         if (!head)
         {
-            head = newNode;
+            head = tail = newNode;
         }
         else
         {
-            Node *current = head;
-            while (current->next)
-            {
-                current = current->next;
-            }
-            current->next = newNode;
+            tail->next = newNode;
+            tail = newNode;
         }
     }
 
-    // Function to return the large number stored as a vector of 64-bit chunks
-    vector<uint64_t> toVector() const
+    // Function to print the entire number in decimal (as individual chunks)
+    void printNumber() const
     {
-        vector<uint64_t> number;
         Node *current = head;
         while (current)
         {
-            number.push_back(current->data);
+            std::cout << current->data << " "; // Print each chunk as a decimal number
             current = current->next;
         }
-        return number;
+        std::cout << std::endl;
     }
 
-    // Destructor to free memory
-    ~LinkedList()
+    // Function to perform modular exponentiation on the large number
+    unsigned int modularExponentiation(unsigned int base, unsigned int exp, unsigned int mod) const
     {
-        Node *current = head;
-        while (current)
+        unsigned int result = 1;
+        base = base % mod;
+        while (exp > 0)
         {
-            Node *next = current->next;
-            delete current;
-            current = next;
+            if (exp % 2 == 1)
+            {
+                result = (result * base) % mod;
+            }
+            exp = exp >> 1; // Divide exp by 2
+            base = (base * base) % mod;
         }
+        return result;
+    }
+
+    // Function to perform the Miller-Rabin test on the whole number
+    bool millerRabinTest(int iterations = 5) const
+    {
+        // For simplicity, use the first chunk as a small modulus
+        unsigned int num = head->data;
+        if (num <= 1)
+            return false;
+        if (num == 2 || num == 3)
+            return true;
+        if (num % 2 == 0)
+            return false;
+
+        // Apply Miller-Rabin test on the whole number as represented in the list
+        unsigned int d = num - 1;
+        unsigned int r = 0;
+
+        // Find r and d such that num - 1 = d * 2^r
+        while (d % 2 == 0)
+        {
+            d /= 2;
+            r++;
+        }
+
+        for (int i = 0; i < iterations; i++)
+        {
+            unsigned int a = 2 + rand() % (num - 4);
+            unsigned int x = modularExponentiation(a, d, num);
+            if (x == 1 || x == num - 1)
+            {
+                continue;
+            }
+
+            bool composite = true;
+            for (unsigned int j = 0; j < r - 1; j++)
+            {
+                x = (x * x) % num;
+                if (x == num - 1)
+                {
+                    composite = false;
+                    break;
+                }
+            }
+
+            if (composite)
+                return false;
+        }
+        return true;
+    }
+
+    // Check if the whole number represented by the linked list is prime
+    bool isPrime() const
+    {
+        return millerRabinTest();
     }
 };
 
-// Helper function to generate a random 1024-bit number (as a binary string)
+// Function to generate a random 1024-bit number (split into 32 32-bit chunks)
 LinkedList generate1024BitRandomNumber()
 {
     LinkedList list;
-    for (int i = 0; i < 16; ++i)
-    { // 16 nodes, each storing 64 bits (16 * 64 = 1024 bits)
-        uint64_t randomChunk = static_cast<uint64_t>(rand()) << 32 | rand();
+    for (int i = 0; i < 32; ++i)
+    {                                      // We need 32 chunks of 32 bits to make a 1024-bit number
+        unsigned int randomChunk = rand(); // Generate a 32-bit random chunk
         list.append(randomChunk);
     }
     return list;
 }
 
-// Modular multiplication (a * b) % mod, handling large numbers
-uint64_t modularMultiply(uint64_t a, uint64_t b, uint64_t mod)
-{
-    uint64_t result = 0;
-    a = a % mod;
-    while (b > 0)
-    {
-        if (b % 2 == 1) // If b is odd, add 'a' to the result
-            result = (result + a) % mod;
-        a = (a * 2) % mod;
-        b /= 2;
-    }
-    return result;
-}
-
-// Modular exponentiation: (base^exp) % mod
-uint64_t modularExponentiation(uint64_t base, uint64_t exp, uint64_t mod)
-{
-    uint64_t result = 1;
-    base = base % mod;
-    while (exp > 0)
-    {
-        if (exp % 2 == 1) // If exp is odd, multiply base with result
-            result = modularMultiply(result, base, mod);
-        exp = exp >> 1; // exp = exp / 2
-        base = modularMultiply(base, base, mod);
-    }
-    return result;
-}
-
-// Function to perform the Miller-Rabin primality test
-bool millerRabinTest(uint64_t n, int iterations = 5)
-{
-    if (n <= 1 || n == 4)
-        return false;
-    if (n <= 3)
-        return true;
-
-    // Write n-1 as 2^r * d, where d is odd
-    uint64_t d = n - 1;
-    while (d % 2 == 0)
-        d /= 2;
-
-    // Witness loop for Miller-Rabin test
-    for (int i = 0; i < iterations; i++)
-    {
-        uint64_t a = 2 + rand() % (n - 4); // Random number in [2, n-2]
-        uint64_t x = modularExponentiation(a, d, n);
-        if (x == 1 || x == n - 1)
-            continue;
-        bool isComposite = true;
-        while (d != n - 1)
-        {
-            x = modularMultiply(x, x, n);
-            d *= 2;
-
-            if (x == 1)
-                return false;
-            if (x == n - 1)
-            {
-                isComposite = false;
-                break;
-            }
-        }
-        if (isComposite)
-            return false;
-    }
-
-    return true;
-}
-
-// Function to check primality of the number represented in a linked list
-bool isPrime(const LinkedList &list)
-{
-    // Convert the linked list to a vector of 64-bit numbers
-    vector<uint64_t> number = list.toVector();
-
-    // For simplicity, let's just use the first chunk (since full 1024-bit
-    // handling without third-party libraries is extremely complex).
-    uint64_t num = number[0]; // Assume first chunk for primality test
-    return millerRabinTest(num);
-}
-
-// Main function
 int main()
 {
-    srand(static_cast<unsigned int>(time(0))); // Seed for random number generation
+    srand(static_cast<unsigned int>(time(0))); // Seed for random number generator
 
-    // Generate a 1024-bit random number
-    LinkedList largeNumber = generate1024BitRandomNumber();
+    LinkedList number = generate1024BitRandomNumber(); // Generate the random 1024-bit number
+    number.printNumber();                              // Print the number as chunks in decimal format
 
-    // Perform the primality test on the large number
-    bool isPrimeNumber = isPrime(largeNumber);
-
-    // Output
-    cout << "Is the number prime? " << (isPrimeNumber ? "True" : "False") << endl;
+    // Check primality of the entire number
+    if (number.isPrime())
+    {
+        std::cout << "The number is prime." << std::endl;
+    }
+    else
+    {
+        std::cout << "The number is not prime." << std::endl;
+    }
 
     return 0;
 }
