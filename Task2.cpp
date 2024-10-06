@@ -37,13 +37,13 @@ public:
         }
     }
 
-    // Function to print the entire number in decimal (as individual chunks)
+    // Function to print the entire number (as individual chunks)
     void printNumber() const
     {
         Node *current = head;
         while (current)
         {
-            std::cout << current->data << " "; // Print each chunk as a decimal number
+            std::cout << current->data << " "; // Print each chunk
             current = current->next;
         }
         std::cout << std::endl;
