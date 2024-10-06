@@ -1,5 +1,9 @@
 # DSA Assignment 1
 
+# Link:
+
+[Click this text to open repo](https://github.com/Overproness/DSA_Assignment_1)
+
 ## Task 1
 
 ### Approach
